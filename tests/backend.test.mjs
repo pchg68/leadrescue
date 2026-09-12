@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {handleLeads} from '../.sites-runtime/backend-test/handlers.mjs';
+const org='00000000-0000-4000-8000-000000000101';
+const lead='00000000-0000-4000-8000-000000000401';
+const request=(suffix='',headers={})=>new Request('https://leadrescue.test/api/v1/leads'+suffix,{headers:{'X-Organization-Id':org,...headers}});
+const principal={subject:'test:user1'};
+test('Sem login: 401 e banco não é consultado',async()=>{const db={list:()=>{throw new Error('Called database');}};assert.equal((await handleLeads(request(),null,db)).status,401);});
+test('Tenant inválido e SQL injection são rejeitados antes do banco',async()=>{for(const value of ['',"x';DROP TABLE Lead;--"]){assert.equal((await handleLeads(request('',{'X-Organization-Id':value}),principal,{})).status,400);}});
+test('Lista autenticada encaminha identidade confiável e parâmetros validados',async()=>{let args;const r=await handleLeads(request('?limit=2'),principal,{list:async(...a)=>{args=a;return [{id:lead},{id:org},{id:'third'}];}});assert.deepEqual(args,['test:user1',org,null,3]);const payload=await r.json();assert.equal(payload.data.items.length,2);assert.equal(payload.data.nextCursor,org);assert.equal(r.headers.get('Cache-Control'),'private, no-store');});
+test('Não expõe erro SQL ou credenciais',async()=>{const r=await handleLeads(request(),principal,{list:async()=>{throw new Error('postgresql://SECRET');}});assert.equal(r.status,503);assert.ok(!(await r.text()).includes('SECRET'));});
+test('Recurso invisível e membership negada retornam 404',async()=>{assert.equal((await handleLeads(request(),principal,{get:async()=>[]},lead)).status,404);assert.equal((await handleLeads(request(),principal,{list:async()=>{throw {code:'42501',message:'Private tenant'};}})).status,404);});
+test('Limites e cursor inválidos são recusados',async()=>{for(const suffix of ['?limit=0','?limit=101','?limit=NaN','?cursor=bad'])assert.equal((await handleLeads(request(suffix),principal,{})).status,400);});

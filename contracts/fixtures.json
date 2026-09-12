@@ -1,0 +1,593 @@
+{
+  "clock": "2026-09-10T15:00:00Z",
+  "timezone": "America/Sao_Paulo",
+  "scoreCases": [
+    {
+      "id": "S01_unknown",
+      "leadComponents": [
+        3,
+        5,
+        0,
+        0,
+        0
+      ],
+      "riskFlags": [],
+      "progression": {
+        "Q": 0,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 0,
+        "S": 0,
+        "R": 0,
+        "A": 10
+      },
+      "expected": {
+        "LS": 8,
+        "RR": 0,
+        "PS": 0,
+        "RP": 23.6,
+        "priority": "LOW"
+      }
+    },
+    {
+      "id": "S02_critical_abandoned",
+      "leadComponents": [
+        30,
+        25,
+        20,
+        15,
+        10
+      ],
+      "riskFlags": [
+        "SLA_OVERDUE",
+        "NO_FIRST_BROKER_RESPONSE",
+        "CUSTOMER_WAITING",
+        "HIGH_INTENT_STAGNANT"
+      ],
+      "progression": {
+        "Q": 20,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 0,
+        "S": 0,
+        "R": 0,
+        "A": 10
+      },
+      "expected": {
+        "LS": 100,
+        "RR": 95,
+        "PS": 10,
+        "RP": 96.25,
+        "priority": "CRITICAL"
+      }
+    },
+    {
+      "id": "S03_opt_out",
+      "leadComponents": [
+        30,
+        25,
+        20,
+        15,
+        10
+      ],
+      "riskFlags": [
+        "SLA_OVERDUE",
+        "NO_FIRST_BROKER_RESPONSE",
+        "CUSTOMER_WAITING",
+        "HIGH_INTENT_STAGNANT"
+      ],
+      "zeroRiskGate": "DO_NOT_CONTACT",
+      "progression": {
+        "Q": 20,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 0,
+        "S": 0,
+        "R": 0,
+        "A": 10
+      },
+      "expected": {
+        "LS": 100,
+        "RR": 0,
+        "PS": 10,
+        "RP": 63,
+        "priority": "HIGH",
+        "queueEligible": false
+      }
+    },
+    {
+      "id": "S04_progress",
+      "leadComponents": [
+        25,
+        20,
+        12,
+        10,
+        9
+      ],
+      "riskFlags": [],
+      "progression": {
+        "Q": 20,
+        "T": 20,
+        "V": 15,
+        "C": 0,
+        "P": 0,
+        "N": 10,
+        "S": 0,
+        "R": 0,
+        "A": 0
+      },
+      "expected": {
+        "LS": 76,
+        "RR": 0,
+        "PS": 65,
+        "RP": 41.2,
+        "priority": "MEDIUM"
+      }
+    },
+    {
+      "id": "S05_post_visit",
+      "leadComponents": [
+        30,
+        25,
+        12,
+        10,
+        9
+      ],
+      "riskFlags": [
+        "SLA_OVERDUE",
+        "POST_VISIT_OVERDUE"
+      ],
+      "progression": {
+        "Q": 20,
+        "T": 20,
+        "V": 0,
+        "C": 15,
+        "P": 0,
+        "N": 0,
+        "S": 0,
+        "R": 0,
+        "A": 10
+      },
+      "expected": {
+        "LS": 86,
+        "RR": 50,
+        "PS": 45,
+        "RP": 67.2,
+        "priority": "HIGH"
+      }
+    },
+    {
+      "id": "S06_cold_attempts",
+      "leadComponents": [
+        8,
+        5,
+        0,
+        0,
+        4
+      ],
+      "riskFlags": [
+        "THREE_UNANSWERED_ATTEMPTS"
+      ],
+      "progression": {
+        "Q": 8,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 0,
+        "S": 15,
+        "R": 0,
+        "A": 10
+      },
+      "expected": {
+        "LS": 17,
+        "RR": 0,
+        "PS": 0,
+        "RP": 27.65,
+        "priority": "LOW"
+      }
+    },
+    {
+      "id": "S07_max_progress",
+      "leadComponents": [
+        30,
+        25,
+        20,
+        15,
+        10
+      ],
+      "riskFlags": [],
+      "progression": {
+        "Q": 20,
+        "T": 20,
+        "V": 15,
+        "C": 15,
+        "P": 20,
+        "N": 10,
+        "S": 0,
+        "R": 0,
+        "A": 0
+      },
+      "expected": {
+        "LS": 100,
+        "RR": 0,
+        "PS": 100,
+        "RP": 45,
+        "priority": "MEDIUM"
+      }
+    },
+    {
+      "id": "S08_risk_cap",
+      "leadComponents": [
+        30,
+        25,
+        20,
+        15,
+        10
+      ],
+      "riskFlags": [
+        "SLA_OVERDUE",
+        "NO_FIRST_BROKER_RESPONSE",
+        "CUSTOMER_WAITING",
+        "POST_VISIT_OVERDUE",
+        "PROPOSAL_FOLLOWUP_OVERDUE",
+        "HIGH_INTENT_STAGNANT"
+      ],
+      "progression": {
+        "Q": 0,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 0,
+        "S": 0,
+        "R": 0,
+        "A": 0
+      },
+      "expected": {
+        "LS": 100,
+        "RR": 100,
+        "PS": 0,
+        "RP": 100,
+        "priority": "CRITICAL"
+      }
+    },
+    {
+      "id": "S09_future",
+      "leadComponents": [
+        25,
+        20,
+        12,
+        10,
+        7
+      ],
+      "riskFlags": [
+        "SLA_OVERDUE"
+      ],
+      "zeroRiskGate": "CONTACT_IN_FUTURE",
+      "progression": {
+        "Q": 20,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 10,
+        "S": 0,
+        "R": 0,
+        "A": 0
+      },
+      "expected": {
+        "LS": 74,
+        "RR": 0,
+        "PS": 30,
+        "RP": 47.3,
+        "priority": "MEDIUM",
+        "queueEligible": false
+      }
+    },
+    {
+      "id": "S10_stagnation",
+      "leadComponents": [
+        25,
+        20,
+        12,
+        10,
+        7
+      ],
+      "riskFlags": [
+        "HIGH_INTENT_STAGNANT"
+      ],
+      "progression": {
+        "Q": 20,
+        "T": 0,
+        "V": 0,
+        "C": 0,
+        "P": 0,
+        "N": 0,
+        "S": 15,
+        "R": 10,
+        "A": 10
+      },
+      "expected": {
+        "LS": 74,
+        "RR": 15,
+        "PS": 0,
+        "RP": 58.55,
+        "priority": "MEDIUM"
+      }
+    }
+  ],
+  "formulaCase": {
+    "LS": 90,
+    "RR": 80,
+    "PS": 20,
+    "RP": 84.5
+  },
+  "bandCases": [
+    {
+      "rp": 39.99,
+      "expected": "LOW"
+    },
+    {
+      "rp": 40,
+      "expected": "MEDIUM"
+    },
+    {
+      "rp": 59.99,
+      "expected": "MEDIUM"
+    },
+    {
+      "rp": 60,
+      "expected": "HIGH"
+    },
+    {
+      "rp": 79.99,
+      "expected": "HIGH"
+    },
+    {
+      "rp": 80,
+      "expected": "CRITICAL"
+    }
+  ],
+  "calendarCases": [
+    {
+      "start": "2026-09-11T20:55:00Z",
+      "minutes": 10,
+      "holidays": [],
+      "expected": "2026-09-14T12:05:00Z"
+    },
+    {
+      "start": "2026-09-11T20:55:00Z",
+      "minutes": 10,
+      "holidays": [
+        "2026-09-14"
+      ],
+      "expected": "2026-09-15T12:05:00Z"
+    }
+  ],
+  "validEvents": [
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "leadId": "11111111-1111-4111-8111-111111111111",
+      "schemaVersion": 1,
+      "source": "fixture",
+      "sourceEventId": "evt-1",
+      "actor": {
+        "type": "USER",
+        "id": "22222222-2222-4222-8222-222222222222"
+      },
+      "occurredAt": "2026-09-10T12:00:00Z",
+      "receivedAt": "2026-09-10T12:00:01Z",
+      "type": "lead.created",
+      "payload": {
+        "operationType": "SALE",
+        "name": "Lead sintético",
+        "originalCreatedAt": "2026-09-10T12:00:00Z"
+      }
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "leadId": "11111111-1111-4111-8111-111111111111",
+      "schemaVersion": 1,
+      "source": "fixture",
+      "sourceEventId": "evt-2",
+      "actor": {
+        "type": "USER",
+        "id": "22222222-2222-4222-8222-222222222222"
+      },
+      "occurredAt": "2026-09-10T12:00:00Z",
+      "receivedAt": "2026-09-10T12:00:01Z",
+      "type": "visit.scheduled",
+      "payload": {
+        "visitId": "V-19",
+        "scheduledFor": "2026-09-12T14:00:00Z"
+      }
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "leadId": "11111111-1111-4111-8111-111111111111",
+      "schemaVersion": 1,
+      "source": "fixture",
+      "sourceEventId": "evt-3",
+      "actor": {
+        "type": "USER",
+        "id": "22222222-2222-4222-8222-222222222222"
+      },
+      "occurredAt": "2026-09-10T12:00:00Z",
+      "receivedAt": "2026-09-10T12:00:01Z",
+      "type": "contact.preference_changed",
+      "payload": {
+        "doNotContact": true,
+        "contactNotBefore": null,
+        "reason": "Opt-out explícito"
+      }
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "leadId": "11111111-1111-4111-8111-111111111111",
+      "schemaVersion": 1,
+      "source": "fixture",
+      "sourceEventId": "evt-4",
+      "actor": {
+        "type": "USER",
+        "id": "22222222-2222-4222-8222-222222222222"
+      },
+      "occurredAt": "2026-09-10T12:00:00Z",
+      "receivedAt": "2026-09-10T12:00:01Z",
+      "type": "lead.imported",
+      "payload": {
+        "currentState": "LOST",
+        "asOf": "2026-09-10T12:00:00Z",
+        "coverage": {
+          "interactionsCompleteFrom": null,
+          "interactionsCompleteThrough": null,
+          "stateHistoryCompleteFrom": null,
+          "precision": "DATE_ONLY"
+        },
+        "lossReason": "UNKNOWN"
+      }
+    }
+  ],
+  "invalidEvents": [
+    {
+      "expected": "unknown event",
+      "event": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "leadId": "11111111-1111-4111-8111-111111111111",
+        "schemaVersion": 1,
+        "source": "fixture",
+        "sourceEventId": "evt-1",
+        "actor": {
+          "type": "USER",
+          "id": "22222222-2222-4222-8222-222222222222"
+        },
+        "occurredAt": "2026-09-10T12:00:00Z",
+        "receivedAt": "2026-09-10T12:00:01Z",
+        "type": "whatsapp.send",
+        "payload": {}
+      }
+    },
+    {
+      "expected": "L3 forbidden",
+      "event": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "leadId": "11111111-1111-4111-8111-111111111111",
+        "schemaVersion": 1,
+        "source": "fixture",
+        "sourceEventId": "evt-1",
+        "actor": {
+          "type": "USER",
+          "id": "22222222-2222-4222-8222-222222222222"
+        },
+        "occurredAt": "2026-09-10T12:00:00Z",
+        "receivedAt": "2026-09-10T12:00:01Z",
+        "type": "recommendation.created",
+        "payload": {
+          "recommendationId": "11111111-1111-4111-8111-111111111111",
+          "action": "CONTACT",
+          "level": "L3"
+        }
+      }
+    },
+    {
+      "expected": "missing scheduledFor",
+      "event": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "leadId": "11111111-1111-4111-8111-111111111111",
+        "schemaVersion": 1,
+        "source": "fixture",
+        "sourceEventId": "evt-1",
+        "actor": {
+          "type": "USER",
+          "id": "22222222-2222-4222-8222-222222222222"
+        },
+        "occurredAt": "2026-09-10T12:00:00Z",
+        "receivedAt": "2026-09-10T12:00:01Z",
+        "type": "visit.scheduled",
+        "payload": {
+          "visitId": "V-19"
+        }
+      }
+    },
+    {
+      "expected": "unknown payload field",
+      "event": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "leadId": "11111111-1111-4111-8111-111111111111",
+        "schemaVersion": 1,
+        "source": "fixture",
+        "sourceEventId": "evt-1",
+        "actor": {
+          "type": "USER",
+          "id": "22222222-2222-4222-8222-222222222222"
+        },
+        "occurredAt": "2026-09-10T12:00:00Z",
+        "receivedAt": "2026-09-10T12:00:01Z",
+        "type": "lead.created",
+        "payload": {
+          "operationType": "SALE",
+          "rescuePriority": 100
+        }
+      }
+    },
+    {
+      "expected": "malformed datetime",
+      "event": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "leadId": "11111111-1111-4111-8111-111111111111",
+        "schemaVersion": 1,
+        "source": "fixture",
+        "sourceEventId": "evt-1",
+        "actor": {
+          "type": "USER",
+          "id": "22222222-2222-4222-8222-222222222222"
+        },
+        "occurredAt": "2026-09-10T12:00:00Z",
+        "receivedAt": "2026-09-10T12:00:01Z",
+        "type": "visit.scheduled",
+        "payload": {
+          "visitId": "V-19",
+          "scheduledFor": "next friday"
+        }
+      }
+    },
+    {
+      "expected": "negative monetary value",
+      "event": {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "organizationId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "leadId": "11111111-1111-4111-8111-111111111111",
+        "schemaVersion": 1,
+        "source": "fixture",
+        "sourceEventId": "evt-1",
+        "actor": {
+          "type": "USER",
+          "id": "22222222-2222-4222-8222-222222222222"
+        },
+        "occurredAt": "2026-09-10T12:00:00Z",
+        "receivedAt": "2026-09-10T12:00:01Z",
+        "type": "proposal.sent",
+        "payload": {
+          "proposalId": "P-1",
+          "amount": "-1.00"
+        }
+      }
+    }
+  ]
+}
+

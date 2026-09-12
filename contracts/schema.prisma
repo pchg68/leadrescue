@@ -1,0 +1,526 @@
+// LeadRescue MVP v0.1.0. Complement with required-constraints.sql.
+// Prisma datasource URL belongs in prisma.config.ts for the selected Prisma release.
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ORGANIZATION_ADMIN
+  MANAGER
+  BROKER
+}
+
+enum LeadState {
+  NEW
+  CONTACTED
+  QUALIFYING
+  QUALIFIED
+  MATCHING
+  OPPORTUNITY
+  VISIT_REQUESTED
+  VISIT_SCHEDULED
+  VISIT_COMPLETED
+  NEGOTIATION
+  PROPOSAL
+  WON
+  PAUSED
+  NURTURE
+  RECOVERY
+  NO_FIT
+  LOST
+  DUPLICATE
+  BLOCKED
+}
+
+enum OperationType {
+  SALE
+  RENT
+  UNKNOWN
+}
+
+enum FinancingStatus {
+  APPROVED
+  OWN_FUNDS
+  DOWN_PAYMENT
+  UNDER_REVIEW
+  UNKNOWN
+  UNABLE
+}
+
+enum Fit {
+  EXCELLENT
+  GOOD
+  LIMITED
+  NONE
+  UNKNOWN
+}
+
+enum LossReason {
+  NO_RESPONSE
+  TIMING
+  FINANCING_PENDING
+  NO_INVENTORY
+  BOUGHT_ELSEWHERE
+  EXPLICIT_DISINTEREST
+  PRICE
+  OTHER
+  UNKNOWN
+}
+
+enum ActionType {
+  CONTACT
+  FOLLOW_UP
+  QUALIFY
+  SCHEDULE_VISIT
+  ASK_FEEDBACK
+  RECOMMEND_PROPERTY
+  REACTIVATE
+  ESCALATE
+  WAIT
+  CLOSE
+}
+
+enum InterventionLevel {
+  L0
+  L1
+  L2
+  L3
+  L4
+}
+
+enum RecommendationStatus {
+  PENDING
+  ACCEPTED
+  EXECUTED
+  DISMISSED
+  EXPIRED
+}
+
+enum ExceptionType {
+  NEGOTIATION_REQUIRED
+  PRICE_REQUEST
+  PROPERTY_SWAP
+  COMPLAINT
+  DATA_CONFLICT
+  BROKER_UNAVAILABLE
+  HIGH_VALUE_LEAD_AT_RISK
+  UNKNOWN_INTENT
+  DUPLICATE
+  INTEGRATION_ERROR
+  DO_NOT_CONTACT
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ExceptionStatus {
+  OPEN
+  ASSIGNED
+  RESOLVED
+  DISMISSED
+}
+
+enum ActorType {
+  USER
+  API_KEY
+  IMPORT
+  SYSTEM
+}
+
+enum AnalysisMode {
+  LIVE
+  HISTORICAL
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum ImportStatus {
+  UPLOADED
+  VALIDATING
+  VALIDATED
+  IMPORTING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+enum RowStatus {
+  VALID
+  INVALID
+  WARNING
+  IMPORTED
+  SKIPPED
+}
+
+enum OutcomeType {
+  REACTIVATED
+  VISIT
+  PROPOSAL
+  WON
+}
+
+enum JobType {
+  ANALYZE
+  IMPORT_VALIDATE
+  IMPORT_COMMIT
+  AUDIT
+  PRIVACY_EXPORT
+  PRIVACY_ERASE
+  RETENTION
+}
+
+model Organization {
+  id String @id @default(uuid()) @db.Uuid
+  name String @db.VarChar(160)
+  timezone String @default("America/Sao_Paulo")
+  active Boolean @default(true)
+  plan String @default("PILOT")
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  authSubject String @unique
+  name String @db.VarChar(160)
+  email String @unique @db.VarChar(254)
+  platformAdmin Boolean @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+model Membership {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  role Role
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,userId])
+}
+model Broker {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  membershipId String? @db.Uuid
+  name String @db.VarChar(160)
+  email String? @db.VarChar(254)
+  phone String? @db.VarChar(20)
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,membershipId])
+}
+model PolicyVersion {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  version Int
+  config Json
+  effectiveAt DateTime @db.Timestamptz(3)
+  createdBy String @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,version])
+}
+model Lead {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  source String @db.VarChar(80)
+  externalId String? @db.VarChar(160)
+  brokerId String? @db.Uuid
+  canonicalLeadId String? @db.Uuid
+  name String? @db.VarChar(160)
+  email String? @db.VarChar(254)
+  phone String? @db.VarChar(20)
+  sourceDetail String? @db.VarChar(200)
+  operationType OperationType @default(UNKNOWN)
+  propertyType String? @db.VarChar(80)
+  city String? @db.VarChar(120)
+  neighborhood String? @db.VarChar(120)
+  minPrice Decimal? @db.Decimal(14,2)
+  maxPrice Decimal? @db.Decimal(14,2)
+  availableDownPayment Decimal? @db.Decimal(14,2)
+  bedrooms Int?
+  parkingSpaces Int?
+  financingStatus FinancingStatus @default(UNKNOWN)
+  purchaseTimelineDays Int?
+  motivation String? @db.VarChar(1000)
+  fit Fit @default(UNKNOWN)
+  currentState LeadState @default(NEW)
+  previousActiveState LeadState?
+  humanRequired Boolean @default(false)
+  doNotContact Boolean @default(false)
+  provisionalContactBlock Boolean @default(false)
+  contactNotBefore DateTime? @db.Timestamptz(3)
+  resumeAt DateTime? @db.Timestamptz(3)
+  lossReason LossReason @default(UNKNOWN)
+  lostAt DateTime? @db.Timestamptz(3)
+  originalCreatedAt DateTime? @db.Timestamptz(3)
+  lastInteractionAt DateTime? @db.Timestamptz(3)
+  nextExpectedActionAt DateTime? @db.Timestamptz(3)
+  deadlineAt DateTime? @db.Timestamptz(3)
+  expectedActor String?
+  expectedAction ActionType?
+  nextCheckAt DateTime? @db.Timestamptz(3)
+  coverage Decimal @default(0) @db.Decimal(4,3)
+  sourceWatermark DateTime? @db.Timestamptz(3)
+  dataQuality Json
+  leadScore Int @default(8)
+  rescueRisk Int @default(0)
+  progressionScore Int @default(0)
+  rescuePriority Decimal @default(23.6) @db.Decimal(5,2)
+  queueEligible Boolean @default(false)
+  suppressionReason String?
+  version Int @default(0)
+  projectionVersion Int @default(0)
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,source,externalId])
+  @@index([organizationId,brokerId,currentState])
+  @@index([organizationId,queueEligible,rescuePriority,id])
+  @@index([organizationId,nextCheckAt,id])
+  @@index([organizationId,phone])
+  @@index([organizationId,email])
+}
+model LeadEvent {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String @db.Uuid
+  type String @db.VarChar(80)
+  schemaVersion Int @default(1)
+  source String @db.VarChar(80)
+  sourceEventId String @db.VarChar(200)
+  sourceSequence String?
+  actorType ActorType
+  actorId String?
+  occurredAt DateTime @db.Timestamptz(3)
+  receivedAt DateTime @default(now()) @db.Timestamptz(3)
+  payload Json
+  isDerived Boolean @default(false)
+  @@id([organizationId,id])
+  @@unique([organizationId,source,sourceEventId])
+  @@index([organizationId,leadId,occurredAt,receivedAt,id])
+}
+model AnalysisRun {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String? @db.Uuid
+  mode AnalysisMode
+  status JobStatus @default(PENDING)
+  asOf DateTime @db.Timestamptz(3)
+  knowledgeCutoff DateTime @db.Timestamptz(3)
+  from DateTime? @db.Timestamptz(3)
+  to DateTime? @db.Timestamptz(3)
+  inputVersion Int?
+  inputHash String
+  policyVersion Int
+  engineVersion String
+  promptVersion String?
+  model String?
+  result Json?
+  errorCode String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  completedAt DateTime? @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@index([organizationId,leadId,createdAt])
+}
+model StateHistory {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String @db.Uuid
+  eventId String @db.Uuid
+  analysisRunId String @db.Uuid
+  previousState LeadState?
+  newState LeadState
+  changedAt DateTime @db.Timestamptz(3)
+  reason String
+  @@id([organizationId,id])
+  @@unique([organizationId,analysisRunId,eventId])
+}
+model ScoreSnapshot {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String @db.Uuid
+  analysisRunId String @db.Uuid
+  leadScore Int
+  rescueRisk Int
+  progressionScore Int
+  rescuePriority Decimal @db.Decimal(5,2)
+  coverage Decimal @db.Decimal(4,3)
+  queueEligible Boolean
+  suppressionReason String?
+  reasons Json
+  calculatedAt DateTime @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,analysisRunId,leadId])
+  @@index([organizationId,leadId,calculatedAt])
+}
+model Recommendation {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String @db.Uuid
+  analysisRunId String @db.Uuid
+  type ActionType
+  level InterventionLevel
+  priority Severity
+  status RecommendationStatus @default(PENDING)
+  title String @db.VarChar(160)
+  description String @db.VarChar(1000)
+  evidenceEventIds Json
+  confidence Decimal @db.Decimal(4,3)
+  generatedBy String
+  fingerprint String
+  version Int @default(1)
+  decisionBy String? @db.Uuid
+  decisionReason String?
+  executedAt DateTime? @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@index([organizationId,leadId,status])
+}
+model ExceptionCase {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String? @db.Uuid
+  type ExceptionType
+  severity Severity
+  status ExceptionStatus @default(OPEN)
+  assignedTo String? @db.Uuid
+  title String @db.VarChar(160)
+  description String @db.VarChar(1000)
+  evidenceEventIds Json
+  fingerprint String
+  decisionReason String?
+  version Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  resolvedAt DateTime? @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@index([organizationId,status,severity])
+}
+model ImportBatch {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  createdBy String @db.Uuid
+  source String
+  objectKey String
+  fileHash String
+  dedupeKey String @db.VarChar(200)
+  status ImportStatus @default(UPLOADED)
+  mapping Json
+  mappingVersion Int @default(1)
+  counters Json
+  confirmedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,dedupeKey])
+}
+model ImportRow {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  batchId String @db.Uuid
+  rowNumber Int
+  status RowStatus
+  normalized Json?
+  errors Json
+  leadId String? @db.Uuid
+  @@id([organizationId,id])
+  @@unique([organizationId,batchId,rowNumber])
+}
+model OutboxJob {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  type JobType
+  status JobStatus @default(PENDING)
+  dedupeKey String
+  payload Json
+  attempts Int @default(0)
+  availableAt DateTime @default(now()) @db.Timestamptz(3)
+  leaseUntil DateTime? @db.Timestamptz(3)
+  leaseOwner String?
+  progress Json?
+  errorCode String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  completedAt DateTime? @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,dedupeKey])
+  @@index([organizationId,status,availableAt])
+}
+model ApiKey {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  name String
+  prefix String
+  secretHash String @unique
+  scopes String[]
+  expiresAt DateTime @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([organizationId,id])
+}
+model IdempotencyRecord {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  principal String
+  method String
+  path String
+  key String
+  requestHash String
+  responseStatus Int
+  response Json
+  expiresAt DateTime @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,principal,method,path,key])
+}
+model AuditLog {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  actorId String
+  action String
+  objectType String
+  objectId String
+  requestId String
+  redactedDiff Json
+  ipHash String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@index([organizationId,createdAt])
+}
+model Outcome {
+  organizationId String @db.Uuid
+  id String @default(uuid()) @db.Uuid
+  leadId String @db.Uuid
+  recommendationId String? @db.Uuid
+  evidenceEventId String @db.Uuid
+  type OutcomeType
+  externalMilestoneId String
+  operationType OperationType
+  amount Decimal? @db.Decimal(14,2)
+  commission Decimal? @db.Decimal(14,2)
+  occurredAt DateTime @db.Timestamptz(3)
+  recordedBy String @db.Uuid
+  note String? @db.VarChar(1000)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([organizationId,id])
+  @@unique([organizationId,evidenceEventId,type])
+  @@unique([organizationId,leadId,type,externalMilestoneId])
+}
+
+
