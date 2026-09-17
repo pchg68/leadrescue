@@ -4,6 +4,7 @@ import {isDeepStrictEqual} from 'node:util';
 import {PGlite} from '@electric-sql/pglite';
 
 // Compare actual PostgreSQL catalogs, ignoring SQL whitespace/order/comments.
+mkdirSync('.sites-runtime',{recursive:true});
 const cli=spawnSync(process.execPath,['node_modules/prisma/build/index.js','migrate','diff','--from-empty','--to-schema','contracts/schema.prisma','--script','--output','.sites-runtime/prisma-canonical.sql'],{
   env:{...process.env,CHECKPOINT_DISABLE:'1',PRISMA_HIDE_UPDATE_MESSAGE:'1'},stdio:'inherit',
 });
@@ -23,7 +24,8 @@ try{
     if(path.startsWith('prisma/'))await db.exec(readFileSync('prisma/migrations/202609110004_prisma_alignment/migration.sql','utf8'));
     snapshots.push((await db.query(catalog)).rows);
   }
-  const differences=snapshots[0].flatMap((entry,i)=>isDeepStrictEqual(entry,snapshots[1][i])?[]:[{actual:entry,expected:snapshots[1][i]}]);
+  const differences=Array.from({length:Math.max(snapshots[0].length,snapshots[1].length)},(_,i)=>i)
+    .flatMap(i=>isDeepStrictEqual(snapshots[0][i],snapshots[1][i])?[]:[{actual:snapshots[0][i],expected:snapshots[1][i]}]);
   if(differences.length)throw new Error(JSON.stringify(differences,null,2));
   mkdirSync('.sites-runtime',{recursive:true});
   writeFileSync('.sites-runtime/schema-catalog.json',JSON.stringify(snapshots[1]));
