@@ -1,3 +1,5 @@
+> Documento histórico preservado. Para estado atual, consulte [README](../README.md), [roadmap](ROADMAP.md) e [auditoria](AUDIT-2026-09-17.md). Notas abaixo podem se contradizer por descreverem etapas diferentes.
+
 # LeadRescue — continuação em 12/09/2026
 
 ## Telefones internacionais e múltiplos

@@ -25,6 +25,8 @@ export default function ConnectedWorkspace({signedIn,displayName,signInPath,sign
     try{const data=await api<{items:Organization[]}>('/api/v1/workspaces');setOrganizations(data.items);setOrg(data.items[0]?.organizationId??'');setLoaded(true);}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   },[]);
+  // Synchronize memberships with server identity; the loader also owns retry/loading state.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(()=>{if(signedIn)void loadOrganizations();},[signedIn,loadOrganizations]);
   const loadLeads=useCallback(async(selected:string,next:string|null=null)=>{
     const version=++requestVersion.current;setBusy(true);setError('');
@@ -34,6 +36,8 @@ export default function ConnectedWorkspace({signedIn,displayName,signInPath,sign
     }catch(e){if(version===requestVersion.current){setLeads([]);setDetail(null);setCursor(null);setError((e as Error).message);}}
     finally{if(version===requestVersion.current)setBusy(false);}
   },[]);
+  // Clear the previous tenant before fetching its replacement; retain the stale-response guard.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(()=>{setLeads([]);setCursor(null);setDetail(null);++requestVersion.current;if(org)void loadLeads(org);},[org,loadLeads]);
   async function create(event:React.FormEvent){
     event.preventDefault();setBusy(true);setError('');

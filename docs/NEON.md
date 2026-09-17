@@ -1,3 +1,5 @@
+> Documento histórico preservado. Para estado atual, consulte [README](../README.md), [roadmap](ROADMAP.md) e [auditoria](AUDIT-2026-09-17.md). Notas abaixo podem se contradizer por descreverem etapas diferentes.
+
 # Ambiente de desenvolvimento — 11/09/2026
 
 Atualização de ativação (20:18 UTC): branch `br-purple-wind-aupmizsb` agora contém migration 005 e diário de cinco migrations com checksums. Runtime leadrescue_app habilitado para LOGIN; segredo configurado no Sites, sem credencial administrativa no runtime. Versão 4 publicada usando essa branch. Não resetar/excluir a branch: passou a atender a aplicação privada. As notas de bloqueio abaixo são histórico.

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 import {AUTHORIZE_SQL,LIST_LEADS_SQL,GET_LEAD_SQL} from '../.sites-runtime/backend-test/queries.mjs';
 import {seed,id,A,B} from './fixtures/database-seed.mjs';
@@ -9,7 +9,10 @@ test('PostgreSQL embarcado: migrations, RLS e autorização real de SQL',async t
   const db=new PGlite();
   try{
     await db.exec(readFileSync('prisma/bootstrap-roles.sql','utf8'));
-    for(const dir of ['202609100001_initial','202609100002_constraints','202609100003_identity','202609110004_prisma_alignment','202609110005_workspaces'])await db.exec(readFileSync('prisma/migrations/'+dir+'/migration.sql','utf8'));
+    const migrations=readdirSync('prisma/migrations',{withFileTypes:true})
+      .filter(entry=>entry.isDirectory()).map(entry=>entry.name).sort();
+    assert.ok(migrations.length>0,'At least one migration must be tested');
+    for(const dir of migrations)await db.exec(readFileSync('prisma/migrations/'+dir+'/migration.sql','utf8'));
     await seed(db);
     const asApp=fn=>db.transaction(async tx=>{await tx.exec('SET LOCAL ROLE leadrescue_app');return fn(tx);});
     const scoped=(subject,org,fn)=>asApp(async tx=>{await tx.query('SELECT public.leadrescue_assert_runtime()');await tx.query(AUTHORIZE_SQL,[subject,org]);return fn(tx);});

@@ -1,5 +1,6 @@
 'use client';
 import {useRef,useState} from 'react';
+import Link from 'next/link';
 import CountryPhonePicker from './country-phone-picker';
 import type {CountryCode} from '@/lib/leadrescue/phones';
 import {Button} from '@/components/ui/button';
@@ -20,7 +21,7 @@ export default function CsvReview(){
   }
   function validate(){setError('');setResults(null);try{if(csv)setResults(validateCsv(csv,mapping,{country}));}catch(e){setError((e as Error).message);}}
   return <main className="max-w-6xl mx-auto p-6 md:p-10 space-y-6">
-    <a className="text-primary underline" href="/">Voltar à minha imobiliária</a>
+    <Link className="text-primary underline" href="/">Voltar à minha imobiliária</Link>
     <div><h1 className="text-3xl font-semibold">Preparar arquivo de leads</h1><p className="mt-3 text-muted-foreground">Confira a identificação dos contatos antes da importação. Esta revisão acontece no navegador e não grava leads no banco.</p></div>
     <section className="bg-card border rounded-xl p-6 space-y-4"><h2 className="text-xl font-semibold">1. Escolha o CSV</h2><label className="block space-y-2"><span>Arquivo UTF-8 · até 20 MiB e 50.000 registros</span><Input type="file" accept=".csv,text/csv" disabled={busy} onChange={e=>{const next=e.target.files?.[0];if(next)void load(next,next.name);}}/></label><div className="flex gap-3 flex-wrap"><Button variant="outline" disabled={busy} onClick={()=>void load(new Blob([sample]),'Exemplo fictício')}>Testar com dados fictícios</Button><Button variant="ghost" onClick={()=>download(sample,'leadrescue-exemplo-ficticio.csv')}>Baixar exemplo</Button></div></section>
     <CountryPhonePicker value={country} onChange={next=>{setCountry(next);setResults(null);}}/>
