@@ -1,5 +1,15 @@
 import {readFileSync,readdirSync} from 'node:fs';
 import {createHash} from 'node:crypto';
+import {inspectLedger} from './verify-migration-ledger.mjs';
+// Never generate SQL from a checkout older than the database.
+if(!process.argv[2])throw new Error('Provide a fresh ledger JSON snapshot; see docs/MIGRATION-RECONCILIATION.md.');
+const recorded=JSON.parse(readFileSync(process.argv[2],'utf8'));
+const inspection=inspectLedger(recorded);
+if(!inspection.compatible)throw new Error('Ledger divergence: '+JSON.stringify(inspection));
+const names=new Set(recorded.map(row=>row.name));
+for(const name of readdirSync('prisma/migrations').filter(n=>/^\d/.test(n)&&n<'202609110005')){
+  if(!names.has(name))throw new Error('Unverified initial baseline: '+name+'. Use the fresh-database setup instead.');
+}
 // Emit an operator-only SQL journal. Does not impersonate Prisma Migrate.
 // Baselines 001–004 only after their schema has been verified; applies 005
 // atomically with its checksum. Stop if recorded files have been modified.
@@ -10,7 +20,7 @@ const statements=[`CREATE TABLE IF NOT EXISTS public._leadrescue_migrations (
  recorded_by text NOT NULL DEFAULT current_user);
  REVOKE ALL ON public._leadrescue_migrations FROM PUBLIC,leadrescue_app,leadrescue_identity;`];
 for(const name of readdirSync('prisma/migrations').filter(n=>/^\d/.test(n)).sort()){
-  const sql=readFileSync(`prisma/migrations/${name}/migration.sql`,'utf8');
+  const sql=readFileSync(`prisma/migrations/${name}/migration.sql`,'utf8').replace(/\r\n/g,'\n');
   const hash=createHash('sha256').update(sql).digest('hex');
   const baseline=name<'202609110005';
   statements.push(`DO $journal$ BEGIN
