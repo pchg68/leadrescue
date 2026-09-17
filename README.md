@@ -4,6 +4,8 @@ Gerenciador de leads imobiliários em construção. Este repositório é a fonte
 
 ## Estado em 17/09/2026
 
+**Atualização após acesso ao Neon:** o Site de teste está na versão 9, adiante desta cópia de código. O banco registra importação CSV e qualificação manual (migrations 006/007), ausentes no GitHub. Recuperar essas fontes na [issue #5](https://github.com/pchg68/leadrescue/issues/5) antes de novas migrations. Os itens abaixo descrevem o código atualmente versionado, não toda a versão publicada. Veja [reconciliação](docs/MIGRATION-RECONCILIATION.md).
+
 - Interface conectada com identidade ChatGPT, imobiliárias, memberships e consulta paginada/detalhe de leads.
 - Preparação de CSV no navegador: mapeamento, revisão, múltiplos telefones internacionais e relatório. **Ainda não grava lotes ou leads.**
 - Demonstração separada em `/demo`, com dados sintéticos e revisão na sessão.
@@ -41,8 +43,8 @@ Histórico preservado: [transferência](MIGRACAO-GITHUB.md), [status anterior](d
 
 ## Próximos passos
 
-1. Integrar e acompanhar a [fundação/CI #1](https://github.com/pchg68/leadrescue/issues/1).
-2. [Reconciliar histórico Prisma e revalidar autenticação #2](https://github.com/pchg68/leadrescue/issues/2).
-3. [Importação persistente de CSV #3](https://github.com/pchg68/leadrescue/issues/3), com validação no servidor, idempotência, deduplicação e isolamento.
+1. Fundação/CI #1 integrada à main pelo PR #4, com CI aprovado.
+2. [Recuperar código das versões 8/9 #5](https://github.com/pchg68/leadrescue/issues/5) e [reconciliar histórico Prisma/autenticação #2](https://github.com/pchg68/leadrescue/issues/2).
+3. [Validar e completar importação CSV #3](https://github.com/pchg68/leadrescue/issues/3) após recuperar a implementação existente.
 
 Cada incremento deve incluir testes, documentação e PR relacionado à issue. Decisões e pendências ficam no GitHub; não é necessário recuperar chats para retomar. O CI não publica automaticamente nem acessa segredos de produção.
