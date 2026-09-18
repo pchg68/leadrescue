@@ -15,3 +15,28 @@ Contexto: a importação persistente é a próxima função do handoff, mas CI e
 Decisão: este incremento entrega CI sem segredos remotos, com instalação congelada, lint/typecheck, equivalência dos cinco contratos, comparação canônica Prisma, testes de domínio e isolamento/migrations em PGlite, e build. Todas as pastas de migrations são descobertas em ordem, evitando ignorar migrations futuras.
 
 Consequência: a aplicação não ganha importação persistente neste incremento. PGlite não prova conectividade Neon ou autenticação Sites. Reconciliação do banco, PostgreSQL remoto e E2E seguem na issue #2; CSV segue na #3. Não declarar Sprint 0/piloto encerrados pelo sucesso do CI.
+
+## ADR-004 — Campanha determinística com compliance incorporado (18/09/2026)
+
+Contexto: a proposta mais defensável é recuperar leads imobiliários inativos, não substituir CRM nem oferecer chatbot genérico. Contato automatizado sem proveniência, supressão, retenção e supervisão cria risco técnico, comercial e jurídico.
+
+Decisão:
+
+- campanha é a unidade auditável;
+- a máquina de estados e regras controla o fluxo;
+- IA atua somente dentro de ferramentas e políticas versionadas;
+- avaliação jurídica válida, supressão, retenção, auditoria e handoff são gates técnicos;
+- o worker repete verificações críticas antes de enviar;
+- estoque estruturado/CRM é a fonte de verdade para atributos objetivos;
+- negociação, proposta vinculante, garantia, aconselhamento e situações sensíveis geram handoff;
+- multiagente, A2A, memória autoevolutiva e RAG geral ficam fora do MVP.
+
+Consequências:
+
+- a [issue #7](https://github.com/pchg68/leadrescue/issues/7) passa a integrar a sequência do produto;
+- WhatsApp e IA em produção dependem dos gates que podem bloquear ações;
+- o sistema produz evidências e apoia governança, mas não promete conformidade automática;
+- mudanças de política exigem aprovação, nova versão e rollback;
+- pilotos devem medir resultado, custo humano, opt-out, incidentes e margem real.
+
+Detalhes: [estratégia](PRODUCT-STRATEGY.md) e [compliance](COMPLIANCE.md).
