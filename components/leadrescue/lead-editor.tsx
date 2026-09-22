@@ -28,7 +28,7 @@ export default function LeadEditor({org,organizationName,lead,onClose,onSaved}:{
   const {name,email,phone,...profile}=form;
   const data=lead?profile:{...profile,name,email,phone,country};const body=JSON.stringify(data);
   if(pending.current?.body!==body)pending.current={body,key:crypto.randomUUID()};
-  try{const response=await fetch('/api/v1/leads'+(lead?'/'+lead.id:''),{method:lead?'PATCH':'POST',headers:{'Content-Type':'application/json','X-Organization-Id':org},body:JSON.stringify({data,version:lead?.version,mutationId:pending.current.key})});
+  try{const response=await fetch('/api/v1/leads'+(lead?'/'+lead.id:''),{method:lead?'PATCH':'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Organization-Id':org},body:JSON.stringify({data,version:lead?.version,mutationId:pending.current.key})});
    const result=await response.json() as {error?:{message:string}};if(!response.ok)throw new Error(result.error?.message??'Não foi possível salvar.');onSaved();
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }

@@ -63,6 +63,8 @@ test('PostgreSQL embarcado: migrations, RLS e autorização real de SQL',async t
       const call=(subject,org,target,version,mutation,body)=>scoped(subject,org,tx=>tx.query('SELECT public.leadrescue_save_manual($1,$2,$3,$4::jsonb,$5) AS result',[target,version,mutation,JSON.stringify(body),'test-manual']));
       const created=(await call('test:user1',A,null,null,id(950),data)).rows[0].result;
       assert.ok(created.id);assert.equal(created.version,1);
+      const createdLead=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND id=$2',[A,created.id])).rows[0];
+      assert.equal(createdLead.queueEligible,false);
       assert.equal((await call('test:user1',A,null,null,id(950),data)).rows[0].result.replayed,true);
       assert.equal((await call('test:user1',A,null,null,id(950),{...data,name:'Outro'})).rows[0].result.error,'IDEMPOTENCY_CONFLICT');
       assert.equal((await call('test:user1',A,null,null,id(951),data)).rows[0].result.error,'DUPLICATE');
@@ -73,6 +75,8 @@ test('PostgreSQL embarcado: migrations, RLS e autorização real de SQL',async t
       await fails(()=>call('test:user5',A,null,null,id(954),{...data,email:'unassigned@example.invalid',phones:[]}),'42501');
       const broker=(await call('test:user2',A,null,null,id(955),{...data,email:'broker-new@example.invalid',phones:[]})).rows[0].result;
       assert.equal((await call('test:user2',A,broker.id,1,id(956),profile)).rows[0].result.version,2);
+      const brokerLead=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND id=$2',[A,broker.id])).rows[0];
+      assert.equal(brokerLead.brokerId,id(302));
       const stored=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND id=$2',[A,created.id])).rows[0];
       assert.equal(stored.city,'São Paulo');assert.equal(stored.provisionalContactBlock,true);assert.equal(stored.queueEligible,false);assert.equal(stored.originalCreatedAt,null);
       assert.equal(stored.dataQuality.qualificationEvidence.reason,profile.reason);

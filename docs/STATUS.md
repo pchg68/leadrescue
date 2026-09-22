@@ -3,7 +3,7 @@
 # Integração controlada da V9 no GitHub — 22/09/2026
 
 - Integração manual concluída sem sobrescrever a main: importação CSV persistente, cadastro manual, qualificação comercial editável, API de importação e idempotência/duplicidade.
-- Migrations adicionadas ao repositório: `202609120006_csv_import` (`ecc9d4a8bc2fa8f346784220c8836a1b64796ea3eb868acd52c90101df194c94`) e `202609120007_manual_qualification` (`3d50ffcbe485456778f4490ea2aaf303600634610b1558157116944b6cd6cd4f`).
+- Migrations adicionadas ao repositório: `202609120006_csv_import` (`f456bc5009af91824ee614130b9b859545d9555dc20899e69b13e9127d1ae0dd`) e `202609120007_manual_qualification` (`e8fe90d26708cce446544526b5fba607676b121ba06c1fe613f7b05f4488127b`).
 - Estado esperado do diário `_leadrescue_migrations`: entradas `001`–`007` com checksums correspondentes; nenhuma migration foi aplicada automaticamente em banco real por esta integração.
 - A suíte integrada (main + V9) e o build de produção foram validados neste branch.
 - Pendências de compliance/LGPD registradas em TODO de código:

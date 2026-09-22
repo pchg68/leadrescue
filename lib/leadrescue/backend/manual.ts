@@ -15,7 +15,7 @@ export async function handleManual(request:Request,principal:Principal|null,save
   try{
    const body=JSON.parse(raw);mutation=requireId(body.mutationId);
    version=id?body.version:null;
-   if(id&&(!Number.isInteger(version)||Number(version)<0))throw new Error('Recarregue a ficha antes de editar.');
+   if(id&&(!Number.isInteger(version)||Number(version)<=0))throw new Error('Recarregue a ficha antes de editar.');
    data=validateQualification(body.data,!id);
   }catch(e){throw new ServiceError(400,'INVALID_DATA',e instanceof Error?e.message:'Dados inválidos.');}
   const rows=await save(context.subject,context.organizationId,'SELECT public.leadrescue_save_manual($1::uuid,$2::int,$3::uuid,$4::jsonb,$5) AS result',[id?requireId(id):null,version,mutation,JSON.stringify(data),requestId]);

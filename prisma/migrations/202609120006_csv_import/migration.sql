@@ -24,8 +24,8 @@ BEGIN
    IF jsonb_array_length(item->'errors')>0 THEN outcome:='INVALID';invalid:=invalid+1;
    ELSIF (item->>'duplicate')::boolean OR EXISTS (
      SELECT 1 FROM public."Lead" l WHERE l."organizationId"=org AND (
-       (item->>'externalId' IS NOT NULL AND l.source=item->>'source' AND l."externalId"=item->>'externalId') OR
-       (item->>'email' IS NOT NULL AND lower(l.email)=item->>'email') OR
+       (nullif(item->>'externalId','') IS NOT NULL AND l.source=item->>'source' AND l."externalId"=nullif(item->>'externalId','')) OR
+       (nullif(item->>'email','') IS NOT NULL AND lower(l.email)=lower(nullif(item->>'email',''))) OR
        EXISTS(SELECT 1 FROM jsonb_array_elements(item->'phones') p WHERE l.phone=p->>'number' OR
          EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(l."dataQuality"->'phones','[]')) old WHERE old->>'number'=p->>'number'))))
      THEN outcome:='SKIPPED';duplicates:=duplicates+1;
@@ -33,13 +33,13 @@ BEGIN
      lead:=gen_random_uuid();
      INSERT INTO public."Lead" ("organizationId",id,name,email,phone,source,"externalId","originalCreatedAt","dataQuality","humanRequired","provisionalContactBlock","suppressionReason","updatedAt")
      VALUES(org,lead,item->>'name',item->>'email',item->'phones'->0->>'number',item->>'source',item->>'externalId',(item->>'originalCreatedAt')::timestamptz,
-       jsonb_build_object('phones',item->'phones','importBatchId',batch,'analysisPending',true,'originalDateMissing',item->>'originalCreatedAt' IS NULL),true,true,'Importado: revisar contexto e permissão de contato',now());
+       jsonb_build_object('phones',item->'phones','importBatchId',batch,'analysisPending',true,'originalDateMissing',(item->'originalCreatedAt' IS NULL OR jsonb_typeof(item->'originalCreatedAt')='null')),true,true,'Importado: revisar contexto e permissão de contato',now());
      INSERT INTO public."LeadEvent" ("organizationId",id,"leadId",type,source,"sourceEventId","actorType","actorId","occurredAt",payload)
      VALUES(org,gen_random_uuid(),lead,'lead.imported','csv',batch::text||':'||(item->>'row'),'IMPORT',member::text,now(),jsonb_build_object('batchId',batch,'rowNumber',item->'row'));
      saved:=saved+1;
    END IF;
    INSERT INTO public."ImportRow" ("organizationId",id,"batchId","rowNumber",status,normalized,errors,"leadId")
-   VALUES(org,gen_random_uuid(),batch,(item->>'row')::integer,outcome::public."RowStatus",CASE WHEN lead IS NOT NULL THEN item-'errors' ELSE NULL END,
+   VALUES(org,gen_random_uuid(),batch,(item->>'row')::integer,outcome::public."RowStatus",CASE WHEN outcome='SKIPPED' THEN NULL ELSE item-'errors' END,
      CASE WHEN outcome='SKIPPED' THEN '["Possível duplicidade; registro existente preservado"]'::jsonb ELSE item->'errors' END,lead);
  END LOOP;
  counts:=jsonb_build_object('imported',saved,'invalid',invalid,'duplicates',duplicates,'total',jsonb_array_length(p_rows));
