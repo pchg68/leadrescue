@@ -1,0 +1,7 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {validateQualification} from '../lib/leadrescue/qualification.ts';
+const profile={operationType:'UNKNOWN',city:'',neighborhood:'',propertyType:'',minPrice:'',maxPrice:'',purchaseTimelineDays:'',financingStatus:'UNKNOWN',motivation:'',reason:'Informações fornecidas em teste fictício.'};
+test('Qualificação mantém valores desconhecidos e normaliza moeda brasileira',()=>{const r=validateQualification({...profile,minPrice:'150000,50',maxPrice:'300000.00'},false);assert.equal(r.minPrice,'150000.50');assert.equal(r.purchaseTimelineDays,null);assert.equal(r.financingStatus,'UNKNOWN');});
+test('Cadastro manual exige identificação e valida todos os telefones',()=>{const r=validateQualification({...profile,name:'Ana Exemplo',email:'ANA@example.invalid',phone:'(41) 99876-5432; (11) 99876-5432',country:'BR'},true);assert.equal(r.email,'ana@example.invalid');assert.equal(r.phones.length,2);for(const extra of [{phone:'123',country:'BR'},{email:'inválido'},{email:'',phone:''}])assert.throws(()=>validateQualification({...profile,name:'Ana Exemplo',email:'ana@example.invalid',phone:'',...extra},true));});
+test('Rejeita orçamento invertido, milhares ambíguos, prazo inválido e escrita de scores',()=>{for(const patch of [{minPrice:'200',maxPrice:'100'},{minPrice:'1.000,00'},{purchaseTimelineDays:'-1'},{purchaseTimelineDays:'1.5'},{reason:'curto'},{leadScore:100},{doNotContact:false},{email:'new@example.invalid'}])assert.throws(()=>validateQualification({...profile,...patch},false));});
