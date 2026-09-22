@@ -2,14 +2,14 @@
 
 Gerenciador de leads imobiliários em construção. Este repositório é a fonte de verdade para código, contratos, decisões e continuidade.
 
-## Estado em 18/09/2026
+## Estado em 22/09/2026
 
-**Atualização após acesso ao Neon:** o Site de teste está na versão 9, adiante desta cópia de código. O banco registra importação CSV e qualificação manual (migrations 006/007), ausentes no GitHub. Recuperar essas fontes na [issue #5](https://github.com/pchg68/leadrescue/issues/5) antes de novas migrations. Os itens abaixo descrevem o código atualmente versionado, não toda a versão publicada. Veja [reconciliação](docs/MIGRATION-RECONCILIATION.md).
+Integração controlada da V9 concluída neste repositório (sem sobrescrita cega da main): importação CSV persistente, cadastro manual, qualificação comercial editável, API de importação, controle de duplicidades/idempotência, migrations 006/007 e testes correspondentes. Veja [reconciliação](docs/MIGRATION-RECONCILIATION.md).
 
 - Interface conectada com identidade ChatGPT, imobiliárias, memberships e consulta paginada/detalhe de leads.
-- Preparação de CSV no navegador: mapeamento, revisão, múltiplos telefones internacionais e relatório. **Ainda não grava lotes ou leads.**
+- Preparação e confirmação de CSV com persistência por lote (até 500 registros), com revisão local e deduplicação por imobiliária.
 - Demonstração separada em `/demo`, com dados sintéticos e revisão na sessão.
-- Cinco migrations PostgreSQL e testes de isolamento por organização/perfil.
+- Sete migrations PostgreSQL (001–007) e testes de isolamento por organização/perfil, importação e qualificação.
 - Fundação de CI integrada; estratégia do produto e LeadRescue Compliance agora estão especificados no GitHub.
 
 O Sprint 0 e o piloto comercial continuam abertos. O handoff registra ativação privada e primeiro acesso; a disponibilidade atual do Site/banco não foi revalidada nesta auditoria. Não há envio automático de mensagens.
@@ -46,8 +46,8 @@ Histórico preservado: [transferência](MIGRACAO-GITHUB.md), [status anterior](d
 ## Próximos passos
 
 1. Fundação/CI #1 integrada à main pelo PR #4, com CI aprovado.
-2. [Recuperar código das versões 8/9 #5](https://github.com/pchg68/leadrescue/issues/5) e [reconciliar histórico Prisma/autenticação #2](https://github.com/pchg68/leadrescue/issues/2).
-3. [Validar e completar importação CSV #3](https://github.com/pchg68/leadrescue/issues/3) após recuperar a implementação existente.
+2. [Reconciliar histórico Prisma/autenticação #2](https://github.com/pchg68/leadrescue/issues/2) e validar próximos ajustes de migração sem reaplicar SQL já executado.
+3. [Completar evolução da importação CSV #3](https://github.com/pchg68/leadrescue/issues/3) (histórico de lotes na interface, resolução assistida de duplicidades e fluxo assíncrono para grandes volumes).
 4. [Implementar LeadRescue Compliance #7](https://github.com/pchg68/leadrescue/issues/7) sobre a base reconciliada, antes de habilitar disparos reais.
 
 Cada incremento deve incluir testes, documentação e PR relacionado à issue. Decisões e pendências ficam no GitHub; não é necessário recuperar chats para retomar. O CI não publica automaticamente nem acessa segredos de produção.

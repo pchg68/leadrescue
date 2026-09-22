@@ -10,7 +10,7 @@ function connect(){
     throw new ServiceError(503,'DATABASE_CONFIGURATION_ERROR','A configuração do banco precisa ser revisada.');
   return neon(process.env.DATABASE_URL,{fetchOptions:{signal:AbortSignal.timeout(15000)}});
 }
-async function run(subject:string,org:string,query:string,params:unknown[]){
+export async function run(subject:string,org:string,query:string,params:unknown[]){
   const sql=connect();
   // One HTTP transaction: role check, active membership resolution, scoped query.
   // set_config(..., true) in authorize expires on COMMIT/ROLLBACK.

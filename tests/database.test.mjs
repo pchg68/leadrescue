@@ -38,6 +38,51 @@ test('PostgreSQL embarcado: migrations, RLS e autorização real de SQL',async t
     await t.test('Scores fora de 0–100 falham no banco',async()=>{await fails(()=>scoped('test:user1',A,tx=>tx.query('UPDATE "Lead" SET "leadScore"=101 WHERE id=$1',[id(401)])),'23514');});
     await t.test('L3 é rejeitado pela constraint do banco',async()=>{await fails(()=>scoped('test:user1',A,tx=>tx.query('INSERT INTO "Recommendation" (id,"organizationId","leadId","analysisRunId",type,level,priority,title,description,"evidenceEventIds",confidence,"generatedBy",fingerprint,"expiresAt","updatedAt") VALUES ($1,$2,$3,$4,\'CONTACT\',\'L3\',\'HIGH\',\'test\',\'test\',\'[]\',1,\'test\',\'test\',now(),now())',[id(801),A,id(401),id(701)])),'23514');});
     await t.test('Instalação mantém 4 leads e 1 evento sintéticos',async()=>{assert.equal((await db.query('SELECT count(*)::int AS n FROM "Lead"')).rows[0].n,4);assert.equal((await db.query('SELECT count(*)::int AS n FROM "LeadEvent"')).rows[0].n,1);});
+    await t.test('Importação atômica: persistência, repetição, duplicidade e isolamento',async()=>{
+      const row=(n,email)=>({row:n,name:'Teste importação',email,source:'csv',externalId:null,originalCreatedAt:null,phones:[{number:'+5541998765432',extension:'12'}],errors:[],duplicate:false});
+      const call=(subject,org,key,rows)=>scoped(subject,org,tx=>tx.query('SELECT public.leadrescue_import($1,$2::jsonb,$3::jsonb,$4) AS result',[key,JSON.stringify(rows),'{}','test-import']));
+      const key='a'.repeat(64),rows=[row(2,'import@example.invalid'),{...row(3,'bad'),errors:['E-mail inválido.']},row(4,'import@example.invalid')];
+      const first=(await call('test:user1',A,key,rows)).rows[0].result;
+      assert.equal(first.imported,1);assert.equal(first.invalid,1);assert.equal(first.duplicates,1);
+      assert.equal((await call('test:user1',A,key,rows)).rows[0].result.replayed,true);
+      assert.equal((await call('test:user1',A,'b'.repeat(64),[row(2,'other@example.invalid')])).rows[0].result.duplicates,1);
+      await fails(()=>call('test:user2',A,key,rows),'42501');
+      await fails(()=>call('test:user1',B,key,rows),'42501');
+      assert.equal((await call('test:user4',B,key,rows)).rows[0].result.imported,1);
+      const stored=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND email=$2',[A,'import@example.invalid'])).rows[0];
+      assert.equal(stored.humanRequired,true);assert.equal(stored.provisionalContactBlock,true);assert.equal(stored.queueEligible,false);
+      assert.equal(stored.dataQuality.phones[0].extension,'12');assert.equal(stored.originalCreatedAt,null);
+      // Fail after first inserted row: transaction must roll everything back.
+      const broken=[{...row(8,'rollback@example.invalid'),phones:[]},{...row(9,'rollback2@example.invalid'),phones:[],source:'x'.repeat(81)}];
+      await assert.rejects(()=>call('test:user1',A,'c'.repeat(64),broken));
+      assert.equal((await db.query('SELECT count(*)::int AS n FROM "Lead" WHERE email=$1',['rollback@example.invalid'])).rows[0].n,0);
+    });
+    await t.test('Cadastro manual: persistência, autoria, dedupe, conflito e permissões',async()=>{
+      const profile={operationType:'SALE',city:'Curitiba',neighborhood:'Centro',propertyType:'Apartamento',minPrice:'100000.00',maxPrice:'300000.00',purchaseTimelineDays:90,financingStatus:'UNKNOWN',motivation:'Teste fictício',reason:'Informado em conversa fictícia.'};
+      const data={...profile,name:'Manual Teste',email:'manual@example.invalid',phones:[{number:'+5541987654321',extension:null}]};
+      const call=(subject,org,target,version,mutation,body)=>scoped(subject,org,tx=>tx.query('SELECT public.leadrescue_save_manual($1,$2,$3,$4::jsonb,$5) AS result',[target,version,mutation,JSON.stringify(body),'test-manual']));
+      const created=(await call('test:user1',A,null,null,id(950),data)).rows[0].result;
+      assert.ok(created.id);assert.equal(created.version,1);
+      const createdLead=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND id=$2',[A,created.id])).rows[0];
+      assert.equal(createdLead.queueEligible,false);
+      assert.equal((await call('test:user1',A,null,null,id(950),data)).rows[0].result.replayed,true);
+      assert.equal((await call('test:user1',A,null,null,id(950),{...data,name:'Outro'})).rows[0].result.error,'IDEMPOTENCY_CONFLICT');
+      assert.equal((await call('test:user1',A,null,null,id(951),data)).rows[0].result.error,'DUPLICATE');
+      const updated=(await call('test:user1',A,created.id,1,id(952),{...profile,city:'São Paulo'})).rows[0].result;
+      assert.equal(updated.version,2);
+      assert.equal((await call('test:user1',A,created.id,1,id(953),profile)).rows[0].result.error,'CONFLICT');
+      for(const [subject,org] of [['test:user2',A],['test:user4',B],['test:user6',A]])await fails(()=>call(subject,org,created.id,2,id(954),profile),'42501');
+      await fails(()=>call('test:user5',A,null,null,id(954),{...data,email:'unassigned@example.invalid',phones:[]}),'42501');
+      const broker=(await call('test:user2',A,null,null,id(955),{...data,email:'broker-new@example.invalid',phones:[]})).rows[0].result;
+      assert.equal((await call('test:user2',A,broker.id,1,id(956),profile)).rows[0].result.version,2);
+      const brokerLead=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND id=$2',[A,broker.id])).rows[0];
+      assert.equal(brokerLead.brokerId,id(302));
+      const stored=(await db.query('SELECT * FROM "Lead" WHERE "organizationId"=$1 AND id=$2',[A,created.id])).rows[0];
+      assert.equal(stored.city,'São Paulo');assert.equal(stored.provisionalContactBlock,true);assert.equal(stored.queueEligible,false);assert.equal(stored.originalCreatedAt,null);
+      assert.equal(stored.dataQuality.qualificationEvidence.reason,profile.reason);
+      const events=(await db.query('SELECT type,payload FROM "LeadEvent" WHERE "organizationId"=$1 AND "leadId"=$2 ORDER BY "receivedAt"',[A,created.id])).rows;
+      assert.equal(events.length,2);assert.equal(events[0].type,'lead.created');assert.equal(events[1].type,'lead.updated');assert.equal(events[1].payload.reason,profile.reason);
+    });
     await t.test('Lista de imobiliárias depende de membership ativa',async()=>{
       const own=await asApp(tx=>tx.query('SELECT * FROM public.leadrescue_workspaces($1)',['test:user1']));
       assert.deepEqual(own.rows.map(x=>x.organizationId),[A]);

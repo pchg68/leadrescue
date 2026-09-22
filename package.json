@@ -13,7 +13,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/engine.test.mjs tests/csv.test.mjs tests/phones.test.mjs tests/contracts.test.mjs tests/migration-ledger.test.mjs && node scripts/test-backend.mjs",
+    "test": "node --experimental-strip-types --test tests/engine.test.mjs tests/csv.test.mjs tests/phones.test.mjs tests/import.test.mjs tests/qualification.test.mjs tests/contracts.test.mjs tests/migration-ledger.test.mjs && node scripts/test-backend.mjs",
     "test:contracts": "node scripts/extract-contracts.mjs docs/LeadRescue-MVP-Build-Specification.md --check",
     "test:schema": "node scripts/verify-prisma-schema.mjs"
   },
