@@ -1,6 +1,15 @@
 # Reconciliação do banco com o GitHub
 
-## Estado observado em 17/09/2026
+## Atualização de fontes em 08/10/2026
+
+PR #9 incorporou 006/007 à main. Os SHA-256 atuais (com finais de linha LF) são:
+
+- 006: `f456bc5009af91824ee614130b9b859545d9555dc20899e69b13e9127d1ae0dd`.
+- 007: `e8fe90d26708cce446544526b5fba607676b121ba06c1fe613f7b05f4488127b`.
+
+Eles diferem dos hashes históricos abaixo. Não há verificação atual do banco nesta atualização. Não alterar checksums do diário nem reaplicar SQL para contornar o bloqueio. Obter diário atual em leitura, recuperar os originais e comparar funções, permissões e schema. Se houver mudança semântica, preparar roll-forward em ambiente isolado. O verificador deve continuar recusando divergência.
+
+## Estado histórico observado em 17/09/2026
 
 A conexão Neon foi restabelecida. A branch `dev-auth-workspace` contém sete migrations no diário `_leadrescue_migrations`; este checkout contém cinco. Seus hashes 001–005 conferem com o diário após normalização de finais de linha para LF. `_prisma_migrations` não existe. Foram confirmadas 17 tabelas com FORCE RLS e runtime com LOGIN sem SUPERUSER/BYPASSRLS/CREATEROLE/CREATEDB.
 

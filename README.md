@@ -45,6 +45,8 @@ Histórico preservado: [transferência](MIGRACAO-GITHUB.md), [status anterior](d
 
 ## Próximos passos
 
+Atualização de 08/10/2026: a última execução do CI da main falhou no lint, interrompendo os checks seguintes. Estabilizar o CI antes de promover código. As migrations 006/007 estão presentes, mas seus hashes divergem dos registros históricos do banco; seguir a reconciliação sem reaplicar SQL. Nenhum ambiente remoto foi revalidado nesta atualização.
+
 1. Fundação/CI #1 integrada à main pelo PR #4, com CI aprovado.
 2. [Reconciliar histórico Prisma/autenticação #2](https://github.com/pchg68/leadrescue/issues/2) e validar próximos ajustes de migração sem reaplicar SQL já executado.
 3. [Completar evolução da importação CSV #3](https://github.com/pchg68/leadrescue/issues/3) (histórico de lotes na interface, resolução assistida de duplicidades e fluxo assíncrono para grandes volumes).
