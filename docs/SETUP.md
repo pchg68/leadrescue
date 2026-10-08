@@ -25,7 +25,7 @@ Um clone limpo assume o perfil portable, sem depender de arquivos do plugin. Des
 
 Use `.env.example` como lista de variáveis, sem versionar valores. `ENABLE_COMMERCIAL_API=false` é o padrão seguro para executar testes e demo. Para operação conectada, configurar `DATABASE_URL` do papel restrito `leadrescue_app` no ambiente do servidor e ativar a flag após verificar banco e memberships. `DIRECT_DATABASE_URL` é exclusiva de operações administrativas. Os comandos de teste não precisam dessas credenciais nem de acesso ao banco real.
 
-As cinco migrations são aplicadas a um banco PGlite novo em cada execução de backend. Não executar bootstrap ou SQL inicial no banco remoto existente como parte do setup local.
+As sete migrations versionadas são aplicadas a um banco PGlite novo em cada execução de backend. Não executar bootstrap ou SQL inicial no banco remoto existente como parte do setup local.
 
 ## O que os checks comprovam
 

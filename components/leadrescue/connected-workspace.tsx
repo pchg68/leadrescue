@@ -18,25 +18,48 @@ async function api<T=unknown>(path:string,options:RequestInit={}){
 }
 export default function ConnectedWorkspace({signedIn,displayName,signInPath,signOutPath}:{signedIn:boolean;displayName:string;signInPath:string;signOutPath:string}){
   const [organizations,setOrganizations]=useState<Organization[]>([]),[org,setOrg]=useState('');
-  const [loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[name,setName]=useState('');
+  const [loaded,setLoaded]=useState(false),[busy,setBusy]=useState(signedIn),[error,setError]=useState(''),[name,setName]=useState('');
   const [leads,setLeads]=useState<Lead[]>([]),[cursor,setCursor]=useState<string|null>(null),[detail,setDetail]=useState<Lead|null>(null);
   const [editor,setEditor]=useState<Lead|'new'|null>(null),[notice,setNotice]=useState('');
   const requestVersion=useRef(0);
-  const loadOrganizations=useCallback(async()=>{
-    setBusy(true);setError('');
-    try{const data=await api<{items:Organization[]}>('/api/v1/workspaces');setOrganizations(data.items);setOrg(data.items[0]?.organizationId??'');setLoaded(true);}
-    catch(e){setError((e as Error).message);}finally{setBusy(false);}
+  const selectOrganization=useCallback((selected:string)=>{
+    ++requestVersion.current;
+    setLeads([]);setCursor(null);setDetail(null);setEditor(null);setNotice('');
+    setError('');setBusy(!!selected);setOrg(selected);
   },[]);
-  useEffect(()=>{if(signedIn)void loadOrganizations();},[signedIn,loadOrganizations]);
-  const loadLeads=useCallback(async(selected:string,next:string|null=null)=>{
-    const version=++requestVersion.current;setBusy(true);setError('');
-    try{const data=await api<{items:Lead[];nextCursor:string|null}>('/api/v1/leads?limit=50'+(next?'&cursor='+encodeURIComponent(next):''),{headers:{'X-Organization-Id':selected}});
+  const loadOrganizations=useCallback((signal?:AbortSignal)=>
+    api<{items:Organization[]}>('/api/v1/workspaces',{signal}).then(data=>{
+      if(signal?.aborted)return;
+      setOrganizations(data.items);selectOrganization(data.items[0]?.organizationId??'');setLoaded(true);
+    }).catch(e=>{if(!signal?.aborted){setError((e as Error).message);setBusy(false);}})
+  ,[selectOrganization]);
+  useEffect(()=>{
+    if(!signedIn)return;
+    const controller=new AbortController();
+    void loadOrganizations(controller.signal);
+    return ()=>controller.abort();
+  },[signedIn,loadOrganizations]);
+  const loadLeads=useCallback((selected:string,next:string|null=null)=>{
+    const version=++requestVersion.current;
+    return api<{items:Lead[];nextCursor:string|null}>('/api/v1/leads?limit=50'+(next?'&cursor='+encodeURIComponent(next):''),{headers:{'X-Organization-Id':selected}}).then(data=>{
       if(version!==requestVersion.current)return;
       setLeads(previous=>next?[...previous,...data.items]:data.items);setCursor(data.nextCursor);
-    }catch(e){if(version===requestVersion.current){setLeads([]);setDetail(null);setCursor(null);setError((e as Error).message);}}
-    finally{if(version===requestVersion.current)setBusy(false);}
+    }).catch(e=>{
+      if(version===requestVersion.current){setLeads([]);setDetail(null);setCursor(null);setError((e as Error).message);}
+    }).finally(()=>{if(version===requestVersion.current)setBusy(false);});
   },[]);
-  useEffect(()=>{setLeads([]);setCursor(null);setDetail(null);setEditor(null);setNotice('');++requestVersion.current;if(org)void loadLeads(org);},[org,loadLeads]);
+  useEffect(()=>{
+    const requests=requestVersion;
+    if(org)void loadLeads(org);
+    return ()=>{++requests.current;};
+  },[org,loadLeads]);
+  function refreshLeads(next:string|null=null){
+    setBusy(true);setError('');void loadLeads(org,next);
+  }
+  function retry(){
+    if(org)refreshLeads();
+    else{setBusy(true);setError('');void loadOrganizations();}
+  }
   async function create(event:React.FormEvent){
     event.preventDefault();setBusy(true);setError('');
     try{await api('/api/v1/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});await loadOrganizations();}
@@ -63,16 +86,16 @@ export default function ConnectedWorkspace({signedIn,displayName,signInPath,sign
       </section>}
       {!signedIn?<div className="rounded-xl bg-card border p-8 space-y-4"><h1 className="text-2xl font-semibold">Acesse seus leads</h1><p>Entre para acessar os dados da sua imobiliária.</p><a className="inline-block bg-primary text-primary-foreground rounded-lg px-5 py-3" href={signInPath} target="_top">Entrar com ChatGPT</a></div>:<>
         {notice&&<p role="status" className="rounded-lg border bg-card p-4">{notice}</p>}
-        {error&&<div role="alert" className="border border-destructive rounded-lg p-4 space-y-3"><p>{error}</p><Button variant="outline" onClick={()=>org?void loadLeads(org):void loadOrganizations()} disabled={busy}>Tentar novamente</Button></div>}
+        {error&&<div role="alert" className="border border-destructive rounded-lg p-4 space-y-3"><p>{error}</p><Button variant="outline" onClick={retry} disabled={busy}>Tentar novamente</Button></div>}
         {busy&&<p role="status">Carregando…</p>}
         {loaded&&!organizations.length&&<form onSubmit={create} className="max-w-xl rounded-xl bg-card border p-8 space-y-5"><h1 className="text-2xl font-semibold">Cadastre sua imobiliária</h1><p>Você será o administrador deste espaço. Se já participa de uma equipe, solicite ao responsável a liberação do seu acesso.</p><label className="block space-y-2"><span>Nome da imobiliária</span><Input value={name} onChange={e=>setName(e.target.value)} required minLength={2} maxLength={160}/></label><Button disabled={busy} type="submit">Criar imobiliária</Button></form>}
-        {current&&<><div className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-2xl font-semibold">Leads</h1><p className="text-muted-foreground mt-2">{current.name} · {roles[current.role]??current.role}</p></div><div className="flex gap-3 items-center">{organizations.length>1&&<Select value={org} onValueChange={setOrg}><SelectTrigger aria-label="Imobiliária" className="w-56"><SelectValue/></SelectTrigger><SelectContent>{organizations.map(item=><SelectItem key={item.organizationId} value={item.organizationId}>{item.name}</SelectItem>)}</SelectContent></Select>}<Button disabled={busy} onClick={()=>setEditor('new')}>Novo lead</Button><Button variant="outline" disabled={busy} onClick={()=>void loadLeads(org)}>Atualizar</Button></div></div>
+        {current&&<><div className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-2xl font-semibold">Leads</h1><p className="text-muted-foreground mt-2">{current.name} · {roles[current.role]??current.role}</p></div><div className="flex gap-3 items-center">{organizations.length>1&&<Select value={org} onValueChange={selectOrganization}><SelectTrigger aria-label="Imobiliária" className="w-56"><SelectValue/></SelectTrigger><SelectContent>{organizations.map(item=><SelectItem key={item.organizationId} value={item.organizationId}>{item.name}</SelectItem>)}</SelectContent></Select>}<Button disabled={busy} onClick={()=>setEditor('new')}>Novo lead</Button><Button variant="outline" disabled={busy} onClick={()=>refreshLeads()}>Atualizar</Button></div></div>
           {!busy&&!error&&!leads.length?<div className="bg-card border rounded-xl p-8"><h2 className="text-lg font-semibold">Nenhum lead disponível</h2><p className="mt-2 text-muted-foreground">Os leads autorizados para seu perfil aparecerão aqui. Clique em Novo lead para cadastrar sem arquivo ou use Importar CSV de leads.</p></div>:!!leads.length&&<div className="bg-card border rounded-xl overflow-hidden"><Table><TableHeader><TableRow><TableHead>Lead</TableHead><TableHead>Etapa</TableHead><TableHead>Origem</TableHead><TableHead>Contato</TableHead><TableHead>Detalhes</TableHead></TableRow></TableHeader><TableBody>{leads.map(lead=><TableRow key={lead.id}><TableCell className="font-medium">{lead.name}</TableCell><TableCell>{states[lead.currentState]??lead.currentState}</TableCell><TableCell>{lead.source}</TableCell><TableCell>{lead.doNotContact?'Não contatar':lead.humanRequired?'Revisão humana':'Sem bloqueio registrado'}</TableCell><TableCell><Button variant="ghost" disabled={busy} onClick={()=>void openLead(lead.id)}>Abrir</Button></TableCell></TableRow>)}</TableBody></Table></div>}
-          {cursor&&<Button disabled={busy} variant="outline" onClick={()=>void loadLeads(org,cursor)}>Carregar mais</Button>}
+          {cursor&&<Button disabled={busy} variant="outline" onClick={()=>refreshLeads(cursor)}>Carregar mais</Button>}
         </>}
       </>}
     </section>
     <Sheet open={!!detail} onOpenChange={open=>{if(!open)setDetail(null);}}><SheetContent className="overflow-y-auto sm:max-w-lg"><SheetHeader><SheetTitle>{detail?.name??'Lead'}</SheetTitle><SheetDescription>Dados salvos da sua imobiliária.</SheetDescription></SheetHeader>{detail&&<div className="p-6 space-y-5"><Button onClick={()=>{setEditor(detail);setDetail(null);}}>Editar qualificação</Button><dl className="space-y-5"><div><dt className="font-medium">Identificação</dt><dd className="mt-2 break-words">{detail.email||'E-mail não informado'}</dd><dd className="mt-2">{detail.dataQuality?.phones?.length?<ul className="space-y-1">{detail.dataQuality.phones.map((p,i)=><li key={i}>{p.number}{p.extension?' · ramal '+p.extension:''}</li>)}</ul>:detail.phone||'Telefone não informado'}</dd></div><div><dt className="font-medium">Qualificação: {qualificationGroups(detail).filter(g=>g.known).length} de 5 grupos preenchidos</dt><dd className="mt-2 space-y-1">{qualificationGroups(detail).map(g=><p key={g.label}>{g.label}: {g.known?'informado':'pendente'}</p>)}</dd><dd className="text-sm text-muted-foreground mt-2">Preenchimento da ficha; não equivale a probabilidade de compra.</dd></div>{[['Etapa',states[detail.currentState]??detail.currentState],['Origem',detail.source],['Lead Score',detail.leadScore],['Risco de resgate',detail.rescueRisk],['Progressão',detail.progressionScore],['Prioridade de resgate',detail.rescuePriority]].map(([label,value])=><div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="font-medium mt-1">{value??'Ainda não calculado'}</dd></div>)}</dl><p>{detail.doNotContact?'Contato bloqueado.':detail.provisionalContactBlock?'Contato sob bloqueio provisório; revisar antes de qualquer ação.':detail.humanRequired?'Revisão humana necessária.':'Nenhum bloqueio de contato registrado.'}</p></div>}</SheetContent></Sheet>
-    {editor&&current&&<LeadEditor key={editor==='new'?'new':editor.id+':'+editor.version} org={org} organizationName={current.name} lead={editor==='new'?undefined:editor} onClose={()=>setEditor(null)} onSaved={()=>{setNotice(editor==='new'?'Lead cadastrado. Os dados ficam salvos na sua imobiliária.':'Qualificação salva. A análise de prioridades permanece pendente.');setEditor(null);setDetail(null);void loadLeads(org);}}/>}
+    {editor&&current&&<LeadEditor key={editor==='new'?'new':editor.id+':'+editor.version} org={org} organizationName={current.name} lead={editor==='new'?undefined:editor} onClose={()=>setEditor(null)} onSaved={()=>{setNotice(editor==='new'?'Lead cadastrado. Os dados ficam salvos na sua imobiliária.':'Qualificação salva. A análise de prioridades permanece pendente.');setEditor(null);setDetail(null);refreshLeads();}}/>}
   </main>;
 }
